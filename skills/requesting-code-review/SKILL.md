@@ -12,9 +12,10 @@ Dispatch a code reviewer subagent to catch issues before they cascade. The revie
 ## When to Request Review
 
 **Mandatory:**
-- After each task in subagent-driven development
 - After completing major feature
 - Before merge to main
+
+**Not in subagent-driven development:** That workflow does NOT review per task. Its review is unified and external — use superpowers:external-code-review after all tasks complete instead of dispatching reviewer subagents.
 
 **Optional but valuable:**
 - When stuck (fresh perspective)
@@ -75,13 +76,12 @@ You: [Fix progress indicators]
 ## Integration with Workflows
 
 **Subagent-Driven Development:**
-- Review after EACH task
-- Catch issues before they compound
-- Fix before moving to next task
+- Do not use this skill per task
+- Unified external review after all tasks via superpowers:external-code-review
 
 **Executing Plans:**
-- Review after each task or at natural checkpoints
-- Get feedback, apply, continue
+- Prefer unified external review after all tasks (superpowers:external-code-review)
+- This skill remains available for ad-hoc checkpoint reviews when needed
 
 **Ad-Hoc Development:**
 - Review before merge

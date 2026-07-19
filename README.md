@@ -193,11 +193,11 @@ The Pi package loads the Superpowers skills and a small extension that injects t
 
 3. **writing-plans** - Activates with approved design. Breaks work into bite-sized tasks (2-5 minutes each). Every task has exact file paths, complete code, verification steps.
 
-4. **subagent-driven-development** or **executing-plans** - Activates with plan. Dispatches fresh subagent per task with two-stage review (spec compliance, then code quality), or executes in batches with human checkpoints.
+4. **subagent-driven-development** or **executing-plans** - Activates with plan. Dispatches fresh subagent per task (no per-task review subagents), or executes in batches with human checkpoints.
 
 5. **test-driven-development** - Activates during implementation. Enforces RED-GREEN-REFACTOR: write failing test, watch it fail, write minimal code, watch it pass, commit. Deletes code written before tests.
 
-6. **requesting-code-review** - Activates between tasks. Reviews against plan, reports issues by severity. Critical issues block progress.
+6. **external-code-review** - Activates after all tasks complete. Generates a review request for an external agent/model, then verifies and applies the results in a fix loop.
 
 7. **finishing-a-development-branch** - Activates when tasks complete. Verifies tests, presents options (merge/PR/keep/discard), cleans up worktree.
 
@@ -221,9 +221,10 @@ The Pi package loads the Superpowers skills and a small extension that injects t
 - **dispatching-parallel-agents** - Concurrent subagent workflows
 - **requesting-code-review** - Pre-review checklist
 - **receiving-code-review** - Responding to feedback
+- **external-code-review** - Unified review by an external agent/model, with fix loop
 - **using-git-worktrees** - Parallel development branches
 - **finishing-a-development-branch** - Merge/PR decision workflow
-- **subagent-driven-development** - Fast iteration with two-stage review (spec compliance, then code quality)
+- **subagent-driven-development** - Fast iteration, unified external review after all tasks
 
 **Meta**
 - **writing-skills** - Create new skills following best practices (includes testing methodology)
