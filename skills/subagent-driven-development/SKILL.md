@@ -124,6 +124,14 @@ This is a cheap sanity net against obvious omissions, not a review. The real rev
 
 ## Model Selection
 
+**User-named model wins.** If this conversation named a model for subagents, use that model on every dispatch.
+
+**Otherwise default to Grok 4.6 High-Fast.** This is an explicit standing choice, not a hint. Dispatch every implementer (and fix) subagent with it. In Cursor, pass `model: "cursor-grok-4.6-high-fast"`. Always pass the model field. Do not omit it. Do not pass `inherit`. Omitting the field or passing `inherit` inherits the parent session model and silently ignores this default.
+
+Do not pick a cheaper or "least powerful" model to save cost when the user has not named a model. Grok 4.6 High-Fast is the default for mechanical, integration, and architecture tasks alike.
+
+**If Grok 4.6 High-Fast is not in this harness's available model list,** fall back to the cost/complexity ladder below.
+
 Use the least powerful model that can handle each role to conserve cost and increase speed.
 
 **Mechanical implementation tasks** (isolated functions, clear specs, 1-2 files): use a fast, cheap model. Most implementation tasks are mechanical when the plan is well-specified.
@@ -329,6 +337,8 @@ I'll verify and apply them."
 - Ignore subagent questions (answer before letting them proceed)
 - Re-dispatch a task the progress ledger already marks complete — check
   the ledger (and `git log`) after any compaction or resume
+- Omit the model field, pass `inherit`, or pick a cheaper model when the
+  user has not named one (the default is Grok 4.6 High-Fast)
 
 **If subagent asks questions:**
 - Answer clearly and completely

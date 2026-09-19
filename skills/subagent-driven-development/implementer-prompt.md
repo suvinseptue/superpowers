@@ -5,8 +5,9 @@ Use this template when dispatching an implementer subagent.
 ```
 Subagent (general-purpose):
   description: "Implement Task N: [task name]"
-  model: [MODEL — REQUIRED: choose per SKILL.md Model Selection; an omitted
-         model silently inherits the session's most expensive one]
+  model: cursor-grok-4.6-high-fast
+         [DEFAULT unless this conversation named a different model.
+          REQUIRED: never omit, never inherit — see SKILL.md Model Selection]
   prompt: |
     You are implementing Task N: [task name]
 
