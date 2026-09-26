@@ -45,6 +45,7 @@ Skip any step = lying, not verifying
 | Bug fixed | Test original symptom: passes | Code changed, assumed fixed |
 | Regression test works | Red-green cycle verified | Test passes once |
 | Agent completed | VCS diff shows changes | Agent reports "success" |
+| Service works | Service up, request answered | Port was busy, check skipped |
 | Requirements met | Line-by-line checklist | Tests passing |
 
 ## Red Flags - STOP
@@ -53,6 +54,7 @@ Skip any step = lying, not verifying
 - Expressing satisfaction before verification ("Great!", "Perfect!", "Done!", etc.)
 - About to commit/push/PR without verification
 - Trusting agent success reports
+- Letting a busy port end the verification instead of clearing it
 - Relying on partial verification
 - Thinking "just this once"
 - Tired and wanting work over
@@ -69,6 +71,7 @@ Skip any step = lying, not verifying
 | "Agent said success" | Verify independently |
 | "I'm tired" | Exhaustion ≠ excuse |
 | "Partial check is enough" | Partial proves nothing |
+| "Port's in use, can't verify" | Kill what holds it, restart, verify |
 | "Different words so rule doesn't apply" | Spirit over letter |
 
 ## Key Patterns
@@ -89,6 +92,12 @@ Skip any step = lying, not verifying
 ```
 ✅ [Run build] [See: exit 0] "Build passes"
 ❌ "Linter passed" (linter doesn't check compilation)
+```
+
+**Port already in use:**
+```
+✅ [lsof -ti:PORT | xargs kill -9] [restart service] [verify]
+❌ "Couldn't start the server, but the code is correct"
 ```
 
 **Requirements:**

@@ -5,11 +5,18 @@ description: Use when executing implementation plans with independent tasks in t
 
 # Subagent-Driven Development
 
-Execute plan by dispatching a fresh implementer subagent per task, a task review (spec compliance + code quality) after each, and a broad whole-branch review at the end.
+Execute plan by dispatching a fresh implementer subagent per task, with NO review during execution. When every task is done, hand one unified review request to an external agent or model outside this session.
 
 **Why subagents:** You delegate tasks to specialized agents with isolated context. By precisely crafting their instructions and context, you ensure they stay focused and succeed at their task. They should never inherit your session's context or history — you construct exactly what they need. This also preserves your own context for coordination work.
 
-**Core principle:** Fresh subagent per task + task review (spec + quality) + broad final review = high quality, fast iteration
+**Core principle:** Fresh subagent per task + zero review during execution + one unified external review at the end = fast iteration, one high-quality review seat instead of N mediocre ones
+
+**Zero review during execution.** You do not review task diffs, and you do
+not dispatch reviewer subagents — not per task, not at the end. The review
+seat belongs to an external model your human partner runs. What you owe the
+review is a **manifest**: an accurate record, written as you go, of what each
+task changed and what evidence backs it. Execution's job is to produce
+correct commits and an honest manifest; judging them is someone else's job.
 
 **Narration:** between tool calls, narrate at most one short line — the
 ledger and the tool results carry the record.
@@ -17,8 +24,8 @@ ledger and the tool results carry the record.
 **Continuous execution:** Do not pause to check in with your human partner between tasks. Execute all tasks from the plan without stopping. The only reasons to stop are the four named below, or all tasks complete. "Should I continue?" prompts and progress summaries waste their time — they asked you to execute the plan, so execute it.
 
 **Rulings, not stalls.** A running plan does not wait on a human. Conflicts,
-ambiguities, plan defects, a cap you would have asked to exceed — decide
-them. The spec is the binding authority, the plan is its argument, and your
+ambiguities, plan defects, a judgment call you would have asked about —
+decide them. The spec is the binding authority, the plan is its argument, and your
 judgment settles what neither answers. Record every decision in the ledger as
 `Ruling: <what you decided> — <why> — <what it costs if wrong>`, and keep
 going. A wrong ruling costs rework your human partner can see and undo; a
@@ -29,6 +36,10 @@ operation; a security-sensitive action; a side effect outside this worktree
 that norms say you ask about first (a merge, a push to a shared branch, a
 publish); and a plan so broken that every path forward is a guess. For those,
 stop and ask.
+
+Freeing a port a service needs is none of those — kill what holds it and
+restart. A verification skipped over a busy port is a verification that did
+not happen.
 
 ## When to Use
 
@@ -52,8 +63,16 @@ digraph when_to_use {
 
 **vs. Executing Plans (inline):**
 - Fresh subagent per task (no context pollution) instead of one context doing every task
-- Review after each task (spec compliance + code quality) instead of only at the end
-- Costs a fresh context per task and per review; inline costs one context plus one final reviewer
+- **Review is external.** This skill dispatches no reviewer at all: the whole
+  branch goes to an agent or model outside the session via
+  superpowers:external-code-review. Inline execution keeps its review in
+  the session — one fresh reviewer subagent over the whole branch at the end
+- Costs a fresh context per task and zero review seats here; inline costs one
+  context plus one in-session final reviewer
+- Choose this skill when the review should come from a model this session
+  cannot dispatch — a stronger model, a different vendor, or a human
+  reviewing out of band. Choose executing-plans when an in-session reviewer
+  is good enough and you want the cheapest path
 - Both run in this session, share the same plan workspace and ledger, and never pause between tasks
 
 ## The Process
@@ -63,61 +82,36 @@ digraph process {
     rankdir=TB;
 
     subgraph cluster_per_task {
-        label="Per Task";
+        label="Per Task (no review)";
         "Dispatch implementer subagent (./implementer-prompt.md)" [shape=box];
         "Implementer asks questions?" [shape=diamond];
         "Answer questions, provide context" [shape=box];
         "Implementer implements, tests, commits, self-reviews" [shape=box];
-        "Generate review package, dispatch task reviewer (./task-reviewer-prompt.md)" [shape=box];
-        "Spec ✅ and quality approved?" [shape=diamond];
-        "Finding conflicts with plan text?" [shape=diamond];
-        "Rule on the conflict, ledger the ruling" [shape=box];
-        "Fix round R of 5: R≤3 resume implementer; R≥4 fresh implementer, more capable model" [shape=box];
-        "Dispatch scoped re-review (./re-review-prompt.md)" [shape=box];
-        "All findings addressed?" [shape=diamond];
-        "R = 5?" [shape=diamond];
-        "Adjudicate each open finding" [shape=box];
-        "Any load-bearing finding?" [shape=diamond];
-        "Rule and continue; stop only if every path forward is a guess" [shape=box];
-        "Park findings in ledger with rulings" [shape=box];
+        "Report status DONE?" [shape=diamond];
+        "Handle NEEDS_CONTEXT / BLOCKED; rule and re-dispatch" [shape=box];
+        "Append task entry to review manifest" [shape=box];
         "Append completion to ledger, mark todo complete" [shape=box];
     }
 
-    "Setup: worktree, ledger check, read plan, pre-flight review" [shape=box];
+    "Setup: worktree, ledger check, manifest check, read plan, pre-flight scan" [shape=box];
     "More tasks remain?" [shape=diamond];
-    "Dispatch final code reviewer (../requesting-code-review/code-reviewer.md)" [shape=box];
-    "Final findings? ONE fix dispatch, one scoped re-review, adjudicate residuals" [shape=box];
-    "Final review clean: delete this plan's workspace" [shape=box];
-    "Use superpowers:finishing-a-development-branch" [shape=box style=filled fillcolor=lightgreen];
+    "Invoke superpowers:external-code-review (Phase 1)" [shape=box];
+    "Hand review request to human partner; STOP" [shape=box style=filled fillcolor=lightgreen];
 
-    "Setup: worktree, ledger check, read plan, pre-flight review" -> "Dispatch implementer subagent (./implementer-prompt.md)";
+    "Setup: worktree, ledger check, manifest check, read plan, pre-flight scan" -> "Dispatch implementer subagent (./implementer-prompt.md)";
     "Dispatch implementer subagent (./implementer-prompt.md)" -> "Implementer asks questions?";
     "Implementer asks questions?" -> "Answer questions, provide context" [label="yes"];
     "Answer questions, provide context" -> "Implementer implements, tests, commits, self-reviews";
     "Implementer asks questions?" -> "Implementer implements, tests, commits, self-reviews" [label="no"];
-    "Implementer implements, tests, commits, self-reviews" -> "Generate review package, dispatch task reviewer (./task-reviewer-prompt.md)";
-    "Generate review package, dispatch task reviewer (./task-reviewer-prompt.md)" -> "Spec ✅ and quality approved?";
-    "Spec ✅ and quality approved?" -> "Append completion to ledger, mark todo complete" [label="yes"];
-    "Spec ✅ and quality approved?" -> "Finding conflicts with plan text?" [label="no"];
-    "Finding conflicts with plan text?" -> "Rule on the conflict, ledger the ruling" [label="yes"];
-    "Rule on the conflict, ledger the ruling" -> "Fix round R of 5: R≤3 resume implementer; R≥4 fresh implementer, more capable model";
-    "Finding conflicts with plan text?" -> "Fix round R of 5: R≤3 resume implementer; R≥4 fresh implementer, more capable model" [label="no"];
-    "Fix round R of 5: R≤3 resume implementer; R≥4 fresh implementer, more capable model" -> "Dispatch scoped re-review (./re-review-prompt.md)";
-    "Dispatch scoped re-review (./re-review-prompt.md)" -> "All findings addressed?";
-    "All findings addressed?" -> "Append completion to ledger, mark todo complete" [label="yes"];
-    "All findings addressed?" -> "R = 5?" [label="no"];
-    "R = 5?" -> "Fix round R of 5: R≤3 resume implementer; R≥4 fresh implementer, more capable model" [label="no - next round"];
-    "R = 5?" -> "Adjudicate each open finding" [label="yes - breaker trips"];
-    "Adjudicate each open finding" -> "Any load-bearing finding?";
-    "Any load-bearing finding?" -> "Rule and continue; stop only if every path forward is a guess" [label="yes"];
-    "Any load-bearing finding?" -> "Park findings in ledger with rulings" [label="no"];
-    "Park findings in ledger with rulings" -> "Append completion to ledger, mark todo complete";
+    "Implementer implements, tests, commits, self-reviews" -> "Report status DONE?";
+    "Report status DONE?" -> "Handle NEEDS_CONTEXT / BLOCKED; rule and re-dispatch" [label="no"];
+    "Handle NEEDS_CONTEXT / BLOCKED; rule and re-dispatch" -> "Dispatch implementer subagent (./implementer-prompt.md)";
+    "Report status DONE?" -> "Append task entry to review manifest" [label="yes"];
+    "Append task entry to review manifest" -> "Append completion to ledger, mark todo complete";
     "Append completion to ledger, mark todo complete" -> "More tasks remain?";
     "More tasks remain?" -> "Dispatch implementer subagent (./implementer-prompt.md)" [label="yes"];
-    "More tasks remain?" -> "Dispatch final code reviewer (../requesting-code-review/code-reviewer.md)" [label="no"];
-    "Dispatch final code reviewer (../requesting-code-review/code-reviewer.md)" -> "Final findings? ONE fix dispatch, one scoped re-review, adjudicate residuals";
-    "Final findings? ONE fix dispatch, one scoped re-review, adjudicate residuals" -> "Final review clean: delete this plan's workspace";
-    "Final review clean: delete this plan's workspace" -> "Use superpowers:finishing-a-development-branch";
+    "More tasks remain?" -> "Invoke superpowers:external-code-review (Phase 1)" [label="no"];
+    "Invoke superpowers:external-code-review (Phase 1)" -> "Hand review request to human partner; STOP";
 }
 ```
 
@@ -141,12 +135,22 @@ a ledger file, not only in todos.
 - Check for this plan's ledger at `<workspace>/progress.md`. If its first
   line names your plan file, tasks with a `Task <N>: complete` line are DONE
   — do not re-dispatch them; resume at the first task without one. A task
-  whose last line is a fix round is mid-loop: resume the loop at the next
-  round. A ledger whose first line names a different plan file — or a stray
+  with a dispatch line but no completion line was interrupted mid-task:
+  check `git log` and the manifest before re-dispatching, so you neither
+  redo finished work nor leave it out of the manifest. A ledger whose first
+  line names a different plan file — or a stray
   ledger at the old flat path `.superpowers/sdd/progress.md` — is another
   plan's progress: leave it in place and start your own, fresh.
 - Create the ledger with its identity as the first line:
   `# SDD ledger — plan: <plan file path>`.
+- **The review manifest lives outside the workspace**, at
+  `docs/superpowers/reviews/YYYY-MM-DD-<feature>-manifest.md`, and is
+  committed. The workspace is git-ignored scratch that gets deleted; the
+  manifest has to outlive it, because the external review is built from it
+  after execution ends. Create it at setup with the plan path, the spec
+  path, and the branch's merge base, then append one entry per task as you
+  go. Never reconstruct it from memory at the end — a manifest written from
+  recollection is the failure this skill exists to avoid.
 - The ledger is your recovery map: the commits it names exist in git even
   when your context no longer remembers creating them. After compaction,
   trust the ledger and `git log` over your own recollection.
@@ -178,8 +182,9 @@ begins — each finding against the plan text that mandates it — and record
 each ruling in the ledger. If the scan is clean, proceed without comment.
 Rule on each conflict it surfaces — the spec is the binding authority, the
 plan is its argument — record the ruling beside its row, and dispatch
-Task 1. The review loop remains the net for conflicts that only emerge from
-implementation.
+Task 1. This scan matters more here than it does under per-task review:
+nothing downstream re-reads the plan until the external review, so a
+contradiction you miss now survives every task that builds on it.
 
 ## Model Selection
 
@@ -190,16 +195,14 @@ Use the least powerful model that can handle each role to conserve cost and incr
 **Integration and judgment tasks** (multi-file coordination, pattern matching, debugging): use a standard model.
 
 **Architecture and design tasks**: use the most capable available model.
-The final whole-branch review is one of these — dispatch it on the most
-capable available model, not the session default.
 
-**Review tasks**: choose the model with the same judgment, scaled to the
-diff's size, complexity, and risk. A small mechanical diff does not need the
-most capable model; a subtle concurrency change does. Scoped re-reviews of
-small fix diffs take a cheap-to-mid tier.
+**No review tier here.** This skill dispatches no reviewers, so there is no
+reviewer model to pick. Review capability is spent once, outside the
+session, on the whole branch — which is the point: one strong reviewer over
+a coherent diff beats N cheap reviewers over fragments.
 
-**Fix-loop escalation (rounds 4-5)**: use a model at least one tier above
-the implementer that got stuck.
+**Re-dispatch after BLOCKED**: use a model at least one tier above the
+implementer that got stuck.
 
 **Always specify the model explicitly when dispatching a subagent.** An
 omitted model inherits your session's model — often the most capable and
@@ -208,7 +211,7 @@ most expensive — which silently defeats this section.
 **Turn count beats token price.** Wall-clock and context cost scale with how
 many turns a subagent takes, and the cheapest models routinely take 2-3× the
 turns on multi-step work — costing more overall. Use a mid-tier model as the
-floor for reviewers and for implementers working from prose descriptions.
+floor for implementers working from prose descriptions.
 When the task's plan text contains the complete code to write, the
 implementation is transcription plus testing: use the cheapest tier for
 that implementer. Single-file mechanical fixes also take the cheapest tier.
@@ -224,9 +227,9 @@ that implementer. Single-file mechanical fixes also take the cheapest tier.
 each a small, independent edit of the same kind — the same one-line fix,
 constant change, or field addition repeated across files — do not dispatch
 one subagent per task. Compose ONE dispatch brief listing every file and
-its change, send the whole batch to a single subagent, and review its diff
-as one unit. Reserve one-dispatch-per-task for work that needs its own
-judgment, its own tests, or its own review surface.
+its change, send the whole batch to a single subagent, and give it one
+manifest entry. Reserve one-dispatch-per-task for work that needs its own
+judgment or its own tests.
 
 Everything you paste into a dispatch prompt — and everything a subagent
 prints back — stays resident in your context for the rest of the session
@@ -245,8 +248,9 @@ child is noticed within minutes, not at the end of the session.
 
 ### 1. Dispatch the implementer
 
-Record BASE (`git rev-parse HEAD`) before dispatching — the review package
-and fix-round diffs need it.
+Record BASE (`git rev-parse HEAD`) before dispatching — the task's manifest
+entry needs the commit range, and the external reviewer uses it to read the
+branch task by task.
 
 - **Task brief:** before dispatching an implementer, run this skill's
   `bash scripts/task-brief PLAN_FILE N` — it extracts the task's full text to a
@@ -271,14 +275,14 @@ and fix-round diffs need it.
   touches, and the global constraints. Nothing else.
 - The dispatch carries the no-subagents contract (it is in the
   implementer template): the implementer never dispatches subagents —
-  not helpers, and never a reviewer. Review arrives from you, after the
-  report. In real sessions, every reviewer a worker spawned duplicated
-  the task review the controller dispatched anyway — a full extra
-  review seat per task.
-- If an earlier task parked a finding in the area this task touches, carry
-  a pointer to that ledger entry in the dispatch.
-- Record the implementer's agent identity from the dispatch result —
-  fix-loop rounds 1-3 resume this agent.
+  not helpers, and never a reviewer. Nothing in this session reviews this
+  diff; the whole branch goes to an external reviewer once every task is
+  done. A reviewer a worker spawns is an unbudgeted seat whose verdict
+  nobody acts on.
+- If an earlier task left a ruling that touches this task's area, carry a
+  pointer to that ledger entry in the dispatch.
+- Record the implementer's agent identity from the dispatch result — a
+  NEEDS_CONTEXT or BLOCKED report resumes this agent.
 - Never dispatch multiple implementation subagents in parallel (conflicts).
 
 Template: [implementer-prompt.md](implementer-prompt.md)
@@ -287,9 +291,9 @@ Template: [implementer-prompt.md](implementer-prompt.md)
 
 Implementer subagents report one of four statuses. Handle each appropriately:
 
-**DONE:** Generate the review package (`bash scripts/review-package PLAN_FILE BASE HEAD`, from this skill's directory — it prints the unique file path it wrote; BASE is the commit you recorded before dispatching the implementer — never `HEAD~1`, which silently drops all but the last commit of a multi-commit task), then dispatch the task reviewer with the printed path.
+**DONE:** Append the task's manifest entry (step 3) and complete the task. Do not read the diff looking for problems — that is the external review's job, and a controller who reviews anyway spends its own context on a verdict nobody will act on.
 
-**DONE_WITH_CONCERNS:** The implementer completed the work but flagged doubts. Read the concerns before proceeding. If the concerns are about correctness or scope, address them before review. If they're observations (e.g., "this file is getting large"), note them and proceed to review.
+**DONE_WITH_CONCERNS:** The implementer completed the work but flagged doubts. Read the concerns. If they are about correctness or scope, resume the implementer to settle them before completing the task. If they are observations (e.g., "this file is getting large"), **write them into the manifest entry as open concerns** — the external reviewer is the one who adjudicates them, and an unrecorded concern is one nobody will ever look at.
 
 **NEEDS_CONTEXT:** The implementer needs information that wasn't provided. Provide the missing context and re-dispatch.
 
@@ -305,200 +309,106 @@ If the implementer asks questions — before starting or mid-task — answer
 clearly and completely, provide additional context if needed, and don't
 rush it into implementation.
 
-### 3. Review the task
+### 3. Append the manifest entry
 
-Per-task reviews are task-scoped gates. The broad review happens once, at the
-final whole-branch review. Never skip the task review, and never accept a
-report missing either verdict — spec compliance AND task quality are both
-required. Implementer self-review never replaces the task review; both are
-needed.
+The manifest is the only artifact the external review is built from. Write
+it now, while the report is in front of you — not at the end, from memory.
 
-- Hand the reviewer its diff as a file: run this skill's
-  `bash scripts/review-package PLAN_FILE BASE HEAD` and pass the reviewer the file path
-  it prints (or, without bash: `git log --oneline`, `git diff --stat`,
-  and `git diff -U10` for the range, redirected to one uniquely named
-  file). The output never enters your own context, and the reviewer sees
-  the commit list, stat summary, and full diff with context in one Read
-  call. Use the BASE you recorded before dispatching the implementer —
-  never `HEAD~1`, which silently truncates multi-commit tasks. Never
-  dispatch a task reviewer without a diff file.
-- **Reviewer inputs:** the task reviewer gets three paths — the same brief
-  file, the report file, and the review package — plus the global
-  constraints that bind the task.
-- The global-constraints block you hand the reviewer is its attention
-  lens. Copy the binding requirements verbatim from the plan's Global
-  Constraints section or the spec: exact values, exact formats, and the
-  stated relationships between components ("same layout as X", "matches
-  Y"). The reviewer's template already carries the process rules (YAGNI,
-  test hygiene, review method) — the constraints block is for what THIS
-  project's spec demands.
-- Do not add open-ended directives like "check all uses" or "run race tests
-  if useful" without a concrete, task-specific reason
-- Do not ask a reviewer to re-run tests the implementer already ran on the
-  same code — the implementer's report carries the test evidence
-- Do not pre-judge findings for the reviewer — never instruct a reviewer to
-  ignore or not flag a specific issue. If you believe a finding would be a
-  false positive, let the reviewer raise it and adjudicate it in the review
-  loop. If the prompt you are writing contains "do not flag," "don't treat X
-  as a defect," "at most Minor," or "the plan chose" — stop: you are
-  pre-judging, usually to spare yourself a review loop.
-The task reviewer may report "⚠️ Cannot verify from diff" items — requirements
-that live in unchanged code or span tasks. These do not block the rest of the
-review, but you must resolve each one yourself before marking the task
-complete: you hold the plan and cross-task context the reviewer
-lacks. If you confirm an item is a real gap, treat it as a failed spec
-review — it enters the fix loop with the other findings.
+Append to `docs/superpowers/reviews/YYYY-MM-DD-<feature>-manifest.md`:
 
-Template: [task-reviewer-prompt.md](task-reviewer-prompt.md)
+```markdown
+## Task <N>: <title>
+- Commits: <base7>..<head7>
+- Files: <paths the implementer touched>
+- Spec/plan requirements this task covers: <the brief's requirements, in one or two lines>
+- Tests: <suites run, counts, and the command> — from the implementer's report
+- Rulings: <ledger ruling ids that shaped this task, or "none">
+- Open concerns: <DONE_WITH_CONCERNS observations, or "none">
+```
 
-### 4. The fix loop
+Rules that keep it honest:
 
-The loop triggers when the review reports spec ❌, any Critical or Important
-finding, or a ⚠️ item you confirmed as a real gap.
+- **Copy evidence, don't summarize it.** Test counts and commands come from
+  the implementer's report file verbatim. "Tests pass" is not evidence; the
+  external reviewer cannot re-run what you did not name.
+- **Record what you could not verify.** If the implementer's report is thin,
+  say so in the entry. A gap the reviewer can see is recoverable; a gap
+  papered over is not.
+- **Never omit a task** because it was small, mechanical, or "obviously
+  fine." Obviousness is a judgment, and judgment is the external reviewer's
+  seat, not yours.
+- A batched dispatch gets one entry listing every file and change in the
+  batch.
 
-Before the loop starts, two routes leave it immediately:
+### 4. Complete the task
 
-- Record Minor findings in the progress ledger as you go
-  (`Task <N>: minor (deferred): <one-liner>`), and point the final
-  whole-branch review at that list so it can triage which must be fixed
-  before merge. A roll-up nobody reads is a silent discard. Minor findings
-  never enter the loop.
-- A finding labeled plan-mandated — or any finding that conflicts with
-  what the plan's text requires — is yours to rule on: weigh the finding
-  against the plan text, decide with the spec as the binding authority, and
-  ledger the ruling before you act on it. Do not dismiss the finding because
-  the plan mandates it, and do not dispatch a fix that contradicts the plan
-  without a recorded ruling.
-Everything else enters the loop. A fix round is one fix dispatch plus one
-scoped re-review. Five rounds maximum per task:
+Append the completion line to the ledger in the same message as your other
+bookkeeping:
 
-**Rounds 1-3 — resume the original implementer.** Send it the open findings
-verbatim. Its context is intact: it knows the task, the code, and its own
-choices. If your harness cannot send another message to a live subagent,
-dispatch a fresh implementer carrying the brief path, the report-file path,
-and the findings — the report file is the persistent memory either way.
+- `Task <N>: complete (commits <base7>..<head7>, manifest entry written)`
 
-**Rounds 4-5 — dispatch a fresh implementer on a more capable model** (per
-Model Selection), with the brief path, the report-file path, the open
-findings, and this framing: "A prior implementer attempted this task
-[N] times; you own it now. Read the report file for what was tried." A loop
-that survives three resumes usually means the implementer cannot see its
-own problem — fresh eyes and a capability bump in one move.
+Then mark the todo complete and move to the next task. There is no review
+gate between tasks — the gate is at the end of the plan, and it is external.
 
-**Every round, either way:** the implementer fixes, re-runs the tests
-covering the amended code, appends its fix report to the same report file,
-and returns the short contract. Before re-dispatching the reviewer, confirm
-the fix report contains the covering tests, the command run, and the
-output; dispatch the re-review once all three are present. Name the
-covering test files in the fix message — a one-line fix does not need the
-whole suite.
+## After the Last Task: External Review
 
-**The re-review is scoped.** Run `bash scripts/review-package PLAN_FILE FIX_BASE HEAD`
-where FIX_BASE is the head the previous review saw, and dispatch
-[re-review-prompt.md](re-review-prompt.md) with the findings list, the
-brief, the report file, and the printed diff path. The re-reviewer verdicts
-each finding ADDRESSED or NOT ADDRESSED and flags new breakage in the fix
-diff only. New Critical/Important breakage in the fix diff joins the open
-findings list. Out-of-scope observations go to the ledger as deferred
-minors — they never extend the loop.
+When the last task is complete, execution is over and review has not started.
+Do not dispatch a reviewer, and do not review the branch yourself.
 
-**After each round,** append to the ledger:
-`Task <N>: fix round <R>/5 (<X> addressed, <Y> open — <finding one-liners>; commits <a7>..<b7>)`
+1. **Check the manifest is complete** — one entry per task, every entry
+   carrying its commit range and its test evidence. A missing entry is
+   repaired from the implementer's report file in the workspace, not from
+   memory. Commit the manifest.
+2. **Invoke superpowers:external-code-review (Phase 1).** It reads the
+   manifest, resolves `BASE_SHA`/`HEAD_SHA`, and writes a self-contained
+   review request to
+   `docs/superpowers/reviews/YYYY-MM-DD-<feature>-review-request-r1.md`.
+3. **Hand your human partner the request path and stop.** They run it
+   through the external agent or model. When results come back,
+   external-code-review Phase 2 verifies each finding, dispatches fix
+   subagents, and loops until convergence — that skill owns the fix
+   discipline, not this one.
 
-Never fix findings yourself in the controller session — your context stays
-clean for coordination, and controller fixes skip review.
-
-**The breaker.** When round 5's re-review still leaves findings open, stop
-dispatching. Adjudicate each open finding yourself — you hold the plan and
-the cross-task context the reviewer lacks:
-
-- **The reviewer is wrong, or the point is contestable:** park it —
-  `Task <N>: parked — <finding> — Ruling: <why the code stands>`. The final
-  review sees both sides.
-- **Real, but nothing downstream builds on it:** park it the same way, with
-  a ruling that says it's real and deferred.
-- **Real and load-bearing** — a later task builds on it, or it reveals a
-  plan defect: rule on the smallest change that unblocks the dependent work,
-  ledger it as `Task <N>: Ruling: <finding> — <what you decided and why>`,
-  and carry it into the next task's dispatch. Parking a structural failure
-  silently lets every dependent task build on it. Stop only when the defect
-  leaves every path forward a guess.
-
-Adjudicate only at the cap. Adjudicating earlier to end a loop is
-pre-judging with a different name. Every adjudication is a ledger entry —
-a silent discard is forbidden.
-
-### 5. Complete the task
-
-When the review comes back clean — or every open finding is parked with a
-ruling at the cap — append the completion line to the ledger in the same
-message as your other bookkeeping:
-
-- `Task <N>: complete (commits <base7>..<head7>, review clean)`
-- `Task <N>: complete (commits <base7>..<head7>, <K> parked)` after a
-  tripped breaker
-
-Then mark the todo complete and move on. Never move to the next task while
-the review has open Critical/Important issues that are neither fixed nor
-parked-with-ruling at the cap.
-
-## Final Review
-
-The final whole-branch review gets a package too: run
-`bash scripts/review-package PLAN_FILE MERGE_BASE HEAD` (MERGE_BASE = the commit the
-branch started from, e.g. `git merge-base main HEAD`) and include the
-printed path in the final review dispatch, so the final reviewer reads
-one file instead of re-deriving the branch diff with git commands. Dispatch
-on the most capable available model (see Model Selection), using
-superpowers:requesting-code-review's
-[code-reviewer.md](../requesting-code-review/code-reviewer.md). Point it at
-the ledger's deferred-minor and parked lines so it can triage which must be
-fixed before merge.
-
-If the final whole-branch review returns findings, dispatch ONE fix subagent
-with the complete findings list — not one fixer per finding.
-Per-finding fixers each rebuild context and re-run suites; a real
-session's final-review fix wave cost more than all its tasks combined.
-Then run exactly one scoped re-review of the fix wave
-(`bash scripts/review-package PLAN_FILE FIX_BASE HEAD` over the fix range,
-[re-review-prompt.md](re-review-prompt.md)).
-Adjudicate any residual findings as in the task loop's breaker: park with
-rulings, or rule on the load-bearing ones and ledger what you decided. Only
-the four classes above stop you here. There is no second fix wave —
-residual load-bearing findings surface to your human partner when
-finishing-a-development-branch presents the options.
+**Do not delete the workspace yet.** Phase 2's fix subagents need the task
+briefs and implementer reports to fix findings without re-deriving context.
+The workspace is deleted at convergence, by finishing-a-development-branch's
+run — not by this skill.
 
 ## Finish
 
-Before you delete anything, collect every ledger line containing `Ruling:` —
-preflight rulings, parked findings, breaker adjudications, all of them — into
-your final message under "Rulings I made", in the order you made them, each
-with what it costs if wrong. The list is exhaustive: if the ledger holds a
+Before you hand off, collect every ledger line containing `Ruling:` —
+preflight rulings, mid-task rulings, all of them — into your final message
+under "Rulings I made", in the order you made them, each with what it costs
+if wrong. Copy that same list into the manifest: the external reviewer is
+judging a branch shaped by those decisions and cannot see your ledger. The list is exhaustive: if the ledger holds a
 ruling, the list holds it. That list is the only place the decisions you
 took on your human partner's behalf reach them — they read it and rework
 whatever you got wrong. A ruling that dies with the workspace was a decision
 made in secret.
 
-When the final whole-branch review is clean and its fixes are merged,
-delete this plan's workspace (`rm -rf <workspace>`) — the git history is
-the record now. Sibling directories belong to other plans; leave them
-alone.
+The workspace stays until external review converges — Phase 2's fix
+subagents read the briefs and reports in it. external-code-review deletes it
+at convergence, when the committed manifest and the git history become the
+record. Do not delete it here.
 
-Use superpowers:finishing-a-development-branch.
+Your terminal state is the review request in your human partner's hands. Do
+not invoke finishing-a-development-branch from here — review has not
+happened yet.
 
 ## Common Rationalizations
 
 | Excuse | Reality |
 |--------|---------|
-| "Close enough on spec compliance" | Reviewer found spec gaps = not done. Fix or hit the cap and adjudicate — those are the only exits. |
-| "I'll fix it myself, dispatching is overhead" | Controller fixes pollute your context and skip review. Resume the implementer. |
-| "One more round will converge" | Past the cap, rounds don't converge — the failure is structural. Adjudicate and route. |
-| "The reviewer will just find something new anyway" | Scoped re-reviews verify fixes; they cannot wander. New findings on untouched code go to the ledger, not the loop. |
-| "This finding is obviously wrong, I'll drop it" | You adjudicate only at the cap, and every ruling is a ledger entry. Silent discards are forbidden. |
-| "The fix was small, skip the re-review" | Unreviewed fixes are how regressions land. Every round ends with a scoped re-review. |
-| "Reviews slow the loop down" | The loop without reviews is just unverified churn. Reviews are the loop's brakes and steering. |
+| "I'll just glance at the diff to be safe" | A glance is a review you are not budgeted for and whose verdict nobody records. Write the manifest entry and move on. |
+| "This task is risky — it deserves its own reviewer" | Risk is an argument for a better external reviewer, not a second review system. Note the risk in the manifest entry; that is how it reaches someone who will act on it. |
+| "The implementer flagged a concern, I'll quietly fix it" | A concern you silently resolve is evidence the reviewer never sees. Resume the implementer for correctness, record the rest as an open concern. |
+| "I'll write the manifest at the end, it's faster" | A manifest written from memory is the failure this skill exists to avoid — test evidence and file lists do not survive a compaction. |
+| "Tests pass" is enough evidence | The reviewer cannot re-run what you did not name. Copy the suite, the counts, and the command from the report. |
+| "The task was trivial, it doesn't need a manifest entry" | Triviality is a judgment, and judgment is the external reviewer's seat. Every task gets an entry. |
+| "I'll delete the workspace now that tasks are done" | Phase 2's fix subagents read the briefs and reports. The workspace dies at convergence, not at the last task. |
+| "All tasks are done, so I'll finish the branch" | Review has not happened. Your terminal state is handing over the review request. |
 | "Ledger bookkeeping is overhead" | The ledger is what survives compaction. Controllers without one have re-dispatched entire completed task sequences. |
-| "The implementer spawned its own reviewer — free extra assurance" | It's a duplicate seat reviewing the same diff; the task review is the gate. A worker-spawned reviewer is a defect to flag, not rigor. |
+| "The implementer spawned its own reviewer — free extra assurance" | It is an unbudgeted seat whose verdict nobody acts on. A worker-spawned reviewer is a defect to flag, not rigor. |
 
 ## Example Workflow
 
@@ -508,6 +418,7 @@ You: I'm using Subagent-Driven Development to execute this plan.
 [Setup: worktree verified]
 [Read plan file once: docs/superpowers/plans/feature-plan.md]
 [Resolve workspace: bash scripts/sdd-workspace docs/superpowers/plans/feature-plan.md — no ledger inside, fresh start]
+[Create docs/superpowers/reviews/2026-09-19-hooks-manifest.md with plan, spec, merge base]
 [Create todos for all tasks]
 
 Task 1: Hook installation script
@@ -520,49 +431,45 @@ You: "User level (~/.config/superpowers/hooks/)"
 
 Implementer: [Later]
   - Implemented install-hook command
-  - Added tests, 5/5 passing
+  - Added tests, 5/5 passing (node --test test/install-hook.test.js)
   - Self-review: Found I missed --force flag, added it
   - Committed
 
-[Run review-package PLAN_FILE BASE HEAD; dispatch task reviewer with the printed path]
-Task reviewer: Spec ✅ - all requirements met, nothing extra.
-  Strengths: Good test coverage, clean. Issues: None. Task quality: Approved.
-
-[Ledger: Task 1: complete (commits a1b2c3d..d4e5f6a, review clean)]
+[Manifest entry: Task 1, commits a1b2c3d..d4e5f6a, files src/install-hook.js
+ + test/install-hook.test.js, tests 5/5 via node --test, rulings none,
+ open concerns none]
+[Ledger: Task 1: complete (commits a1b2c3d..d4e5f6a, manifest entry written)]
 
 Task 2: Recovery modes
 
 [Run task-brief for Task 2; dispatch implementer with brief + report paths + context]
 
-Implementer: [No questions]
+Implementer: DONE_WITH_CONCERNS
   - Added verify/repair modes
-  - 8/8 tests passing
+  - 8/8 passing (node --test test/recovery.test.js)
+  - Concern: "src/recovery.js is getting long (410 lines)"
   - Committed
 
-[Run review-package PLAN_FILE BASE HEAD; dispatch task reviewer with the printed path]
-Task reviewer: Spec ❌:
-  - Missing: Progress reporting (spec says "report every 100 items")
-  Issues (Important): Magic number (100)
-
-[Fix round 1: resume the implementer with both findings]
-Implementer: Added progress reporting, extracted PROGRESS_INTERVAL constant.
-  Re-ran test/recovery.test.js — 10/10 passing. Fix report appended.
-
-[Run review-package PLAN_FILE FIX_BASE HEAD; dispatch scoped re-review]
-Re-reviewer: Missing progress reporting — ADDRESSED (src/recovery.js:41).
-  Magic number — ADDRESSED (src/recovery.js:7). New breakage: none.
-  Verdict: all findings addressed.
-
-[Ledger: Task 2: fix round 1/5 (2 addressed, 0 open; commits d4e5f6a..b7c8d9e)]
-[Ledger: Task 2: complete (commits d4e5f6a..b7c8d9e, review clean)]
+[Observation, not correctness — it goes in the manifest, not a fix]
+[Manifest entry: Task 2, commits d4e5f6a..b7c8d9e, files src/recovery.js,
+ tests 8/8 via node --test, open concerns: recovery.js at 410 lines]
+[Ledger: Task 2: complete (commits d4e5f6a..b7c8d9e, manifest entry written)]
 
 ...
 
-[After all tasks]
-[Run review-package PLAN_FILE MERGE_BASE HEAD; dispatch final code-reviewer, most capable model]
-Final reviewer: All requirements met. Deferred minors triaged: none block merge.
+[After the last task]
+[Manifest complete: one entry per task, every entry has a commit range and
+ test evidence. Rulings I made copied in. Committed.]
 
-[Delete this plan's workspace — the record now lives in git]
+Using superpowers:external-code-review to build the review request.
 
-Done! Using superpowers:finishing-a-development-branch.
+[Phase 1 writes docs/superpowers/reviews/2026-09-19-hooks-review-request-r1.md]
+
+Review request ready at docs/superpowers/reviews/2026-09-19-hooks-review-request-r1.md.
+Run it through your external reviewer and paste the results back — I'll
+verify each finding and dispatch the fixes.
+
+Rulings I made:
+  - Task 2 recovery interval set to 100 items (plan said "periodically";
+    spec silent). Costs a config change if wrong.
 ```

@@ -312,11 +312,11 @@ Restart any active Muse sessions after installing so the `SessionStart` hook tak
 
 3. **writing-plans** - Activates with approved design. Breaks work into bite-sized tasks (2-5 minutes each). Every task has exact file paths, complete code, verification steps.
 
-4. **subagent-driven-development** or **executing-plans** - Activates with plan. Either dispatches a fresh subagent per task with a review after each (most thorough), or implements every task inline in the current session with one fresh review of the whole branch at the end (cheapest).
+4. **subagent-driven-development** or **executing-plans** - Activates with plan. Either dispatches a fresh subagent per task with no review during execution and one unified review request for an external agent/model at the end, or implements every task inline in the current session with one fresh review of the whole branch at the end (cheapest).
 
 5. **test-driven-development** - Activates during implementation. Enforces RED-GREEN-REFACTOR: write failing test, watch it fail, write minimal code, watch it pass, commit. Deletes code written before tests.
 
-6. **requesting-code-review** - Activates between tasks. Reviews against plan, reports issues by severity. Critical issues block progress.
+6. **external-code-review** - Activates after all tasks complete. Generates a review request for an external agent/model, then verifies and applies the results in a fix loop.
 
 7. **finishing-a-development-branch** - Activates when tasks complete. Verifies tests, presents options (merge/PR/keep/discard), cleans up worktree.
 
@@ -355,9 +355,10 @@ Superpowers is built by [Jesse Vincent](https://blog.fsck.com) and the rest of t
 - **dispatching-parallel-agents** - Concurrent subagent workflows
 - **requesting-code-review** - Pre-review checklist
 - **receiving-code-review** - Responding to feedback
+- **external-code-review** - Unified review by an external agent/model, with fix loop
 - **using-git-worktrees** - Parallel development branches
 - **finishing-a-development-branch** - Merge/PR decision workflow
-- **subagent-driven-development** - Fast iteration with two-stage review (spec compliance, then code quality)
+- **subagent-driven-development** - Fresh subagent per task, unified external review after all tasks
 
 **Meta**
 - **writing-skills** - Create new skills following best practices (includes testing methodology)

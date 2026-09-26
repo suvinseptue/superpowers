@@ -35,6 +35,10 @@
         "path": "skills/receiving-code-review/SKILL.md"
       },
       {
+        "id": "external-code-review",
+        "path": "skills/external-code-review/SKILL.md"
+      },
+      {
         "id": "requesting-code-review",
         "path": "skills/requesting-code-review/SKILL.md"
       },

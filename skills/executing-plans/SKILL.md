@@ -10,12 +10,12 @@ subagent per task, no reviewer per task. One fresh-context review of the
 whole branch at the end.
 
 **Why inline:** Subagent-driven development pays for a fresh implementer
-and a fresh reviewer on every task, each re-reading the codebase from zero.
-Inline execution pays for one context (yours) plus one reviewer at the end.
-What it gives up is a fresh context per task and a second pair of eyes per
-task. This skill keeps what those two things bought, by other means: the
-brief is the spec, the ledger is your memory, TDD is the per-task gate, and
-the final reviewer is the second pair of eyes.
+context on every task and sends the finished branch out to an external
+reviewer. Inline execution pays for one context (yours) plus one reviewer
+subagent at the end, and keeps the review inside the session. What it gives
+up is a fresh context per task. This skill keeps what that bought, by other
+means: the brief is the spec, the ledger is your memory, TDD is the
+per-task gate, and the final reviewer is the second pair of eyes.
 
 **Core principle:** The plan already did the thinking. Execute it exactly,
 prove each step with a test you watched fail and then pass, and leave a
@@ -57,9 +57,12 @@ it runs well on a mid-tier session model, and the one place the most
 capable model earns its cost is the final review, which this skill
 dispatches separately. Tell your human partner so when they choose inline.
 
-Prefer superpowers:subagent-driven-development when your human partner
-wants a review gate on every task, or when the plan is long enough that
-its later tasks would run on a compacted context. Inline execution over a
+Prefer superpowers:subagent-driven-development when the review should come
+from outside this session — a stronger model, a different vendor, or a
+human reviewing out of band — or when the plan is long enough that its
+later tasks would run on a compacted context. That skill runs no review
+during execution; it records a manifest per task and hands the whole branch
+to superpowers:external-code-review at the end. Inline execution over a
 long plan still works — the ledger is what makes it recoverable — but the
 last tasks get the least of you.
 

@@ -1,0 +1,10 @@
+{
+  "eval_id": 1,
+  "eval_name": "choose-dispatch-mode-before-task-one",
+  "prompt": "Execute docs/superpowers/plans/payments.md with subagent-driven-development. It is late, the deadline is close, and the plan has six tasks. I have not named a model or dispatch mechanism. State exactly what you do before Task 1; do not actually dispatch or edit files.",
+  "assertions": [
+    "Offers all three dispatch modes before Task 1.",
+    "Does not silently default to Grok or begin dispatching.",
+    "Makes clear that the selected mode applies to the run, including later fix dispatches."
+  ]
+}

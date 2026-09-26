@@ -43,10 +43,11 @@ selected path's prerequisites:
 
 - Spike: the human partner approves the question and probe.
 - Bounded: the human partner approves the short in-chat design.
-- Architectural: the human partner reviews and approves the written spec,
-  then reviews the written implementation plan and selects its execution
-  method. Conversational design approval only permits writing the spec;
-  written-spec approval only permits invoking writing-plans.
+- Architectural: the human partner approves the design as presented back
+  from the written spec, then reviews the written implementation plan and
+  selects its execution method. Approval of an approach in conversation
+  only permits writing the spec; approval of the presented spec only
+  permits invoking writing-plans.
 
 A reply approves the stage actually presented. Approval of an idea or
 feature scope does not approve artifacts that do not exist yet. Resume
@@ -106,6 +107,9 @@ complete that path's reviews before implementation.
 | "The spike works, so I'll keep the code" | A spike's output is an answer. Keeping the code is a new request — classify it. |
 | "It grew, but I'm almost done — no need to re-classify" | Hidden complexity upgrades the path mid-task. Stop and say so. |
 | "They approved the spike, so the follow-up change is approved too" | Each task gets its own classification and its own approval. |
+| "I know what good design looks like — I don't need to open design-principles.md" | You are about to judge every approach against it. Read the file; a remembered gist is how the baseline option quietly disappears. |
+| "The design is in my head, I'll present it and write the spec after" | Architectural presentation is a restatement of the written spec. Write the spec first, or the two drift the moment they differ. |
+| "This framing is good, I'll put it in the spec too" | The spec is what an implementer builds from. Reviewer framing bloats it — present it, don't file it. |
 
 ## Checklist
 
@@ -130,12 +134,25 @@ your path and complete them in order.
 1. **Explore project context** — check files, docs, recent commits
 2. **Offer the visual companion just-in-time** — NOT upfront. The first time a question would genuinely be clearer shown than described, offer it then (its own message); on approval its browser tab opens for you. If no visual question ever arises, never offer it. See the Visual Companion section below.
 3. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria
-4. **Propose 2-3 approaches** — with trade-offs and your recommendation
-5. **Present design** — in sections scaled to their complexity, get user approval after each section
-6. **Write design doc** — save to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md` and commit
-7. **Spec self-review** — quick inline check for placeholders, contradictions, ambiguity, scope (see below)
-8. **User reviews written spec** — ask user to review the spec file before proceeding
-9. **Transition to implementation** — invoke writing-plans skill to create implementation plan
+4. **Read the design principles** — read [design-principles.md](design-principles.md) in full
+5. **Propose 2-3 approaches** — baseline first, with complexity as an explicit trade-off axis and your recommendation
+6. **Run the self-check** — five questions below; fix what they expose before writing the spec
+7. **Write design doc** — save to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md` and commit
+8. **Spec self-review** — re-run the self-check against the written spec, plus placeholders, contradictions, ambiguity, scope (see below)
+9. **Present design** — restate the written spec in pure product language, following [design-presentation.md](design-presentation.md)
+10. **User approves** — offer the quick prototype with the approval ask. Approval covers the presentation and the spec; changes go into the spec, then re-present
+11. **Transition to implementation** — invoke writing-plans skill to create implementation plan
+
+<HARD-GATE>
+Architectural path only. Do NOT propose approaches until you have read
+[design-principles.md](design-principles.md) in this session, and do NOT
+present the design until the spec is written, self-reviewed, and you have
+read [design-presentation.md](design-presentation.md). Summarizing either
+file from memory does not count — that is how the principles stop being
+applied and how the presentation drifts from the spec. Every approach you
+propose is judged against the principles; the presentation is a restatement
+of the written spec, so there is nothing to restate until the spec exists.
+</HARD-GATE>
 
 ## Process Flow
 
@@ -150,12 +167,13 @@ digraph brainstorming {
     "Implement via normal workflow (no plan doc)" [shape=doublecircle];
     "Explore project context" [shape=box];
     "Ask clarifying questions" [shape=box];
-    "Propose 2-3 approaches" [shape=box];
-    "Present design sections" [shape=box];
-    "User approves design?" [shape=diamond];
+    "Read design-principles.md" [shape=box];
+    "Propose 2-3 approaches\n(baseline + complexity trade-offs)" [shape=box];
+    "Run self-check (5 questions)" [shape=box];
     "Write design doc" [shape=box];
-    "Spec self-review\n(fix inline)" [shape=box];
-    "User reviews spec?" [shape=diamond];
+    "Spec self-review\n(self-check + fix inline)" [shape=box];
+    "Present design\n(restate spec in product language)" [shape=box];
+    "User approves?" [shape=diamond];
     "Invoke writing-plans skill" [shape=doublecircle];
     "Hidden complexity? Upgrade path" [shape=box];
 
@@ -169,15 +187,15 @@ digraph brainstorming {
     "Human approves?" -> "Implement via normal workflow (no plan doc)" [label="bounded: yes"];
     "Hidden complexity? Upgrade path" -> "Classify: spike / bounded / architectural";
     "Explore project context" -> "Ask clarifying questions";
-    "Ask clarifying questions" -> "Propose 2-3 approaches";
-    "Propose 2-3 approaches" -> "Present design sections";
-    "Present design sections" -> "User approves design?";
-    "User approves design?" -> "Present design sections" [label="no, revise"];
-    "User approves design?" -> "Write design doc" [label="yes"];
-    "Write design doc" -> "Spec self-review\n(fix inline)";
-    "Spec self-review\n(fix inline)" -> "User reviews spec?";
-    "User reviews spec?" -> "Write design doc" [label="changes requested"];
-    "User reviews spec?" -> "Invoke writing-plans skill" [label="approved"];
+    "Ask clarifying questions" -> "Read design-principles.md";
+    "Read design-principles.md" -> "Propose 2-3 approaches\n(baseline + complexity trade-offs)";
+    "Propose 2-3 approaches\n(baseline + complexity trade-offs)" -> "Run self-check (5 questions)";
+    "Run self-check (5 questions)" -> "Write design doc";
+    "Write design doc" -> "Spec self-review\n(self-check + fix inline)";
+    "Spec self-review\n(self-check + fix inline)" -> "Present design\n(restate spec in product language)";
+    "Present design\n(restate spec in product language)" -> "User approves?";
+    "User approves?" -> "Write design doc" [label="changes requested\n(edit the spec)"];
+    "User approves?" -> "Invoke writing-plans skill" [label="approved"];
 }
 ```
 
@@ -208,18 +226,35 @@ is the whole process.
 
 **Exploring approaches:**
 
-- Propose 2-3 different approaches with trade-offs
+Read [design-principles.md](design-principles.md) first. Then:
+
+- Propose 2-3 different approaches with trade-offs — and make **complexity one of the trade-off axes**, stated explicitly rather than left implied
+- **One option MUST be the baseline**: the simplest approach that meets the stated need. If you are not recommending it, say precisely what it fails to handle — "it doesn't scale" is not an answer, "it re-reads the whole file on every keystroke and the files are already 40MB" is
+- For every option above the baseline, name the specific complexity it adds, which of the justifying reasons it draws on, and the evidence for that reason. Complexity with no reason from that list is speculation — drop it from the proposal rather than offering it
+- Spell out cost and benefit concretely: what it costs to build, to understand, to operate, and to change later; what it buys, and for whom
 - Present options conversationally with your recommendation and reasoning
 - Lead with your recommended option and explain why
 - YAGNI ruthlessly - remove unnecessary features from every approach and design
 
-**Presenting the design:**
+Good trade-off statement:
 
-- Once you believe you understand what you're building, present the design
-- Scale each section to its complexity: a few sentences if straightforward, up to 200-300 words if nuanced
-- Ask after each section whether it looks right so far
-- Cover: architecture, components, data flow, error handling, testing
-- Be ready to go back and clarify if something doesn't make sense
+> **B — add a job queue.** Buys: uploads stop blocking the request. Costs: a second process to run and monitor, plus retry/duplicate semantics to get right. Justified by: scale already in sight — p95 upload is 8s today and growing.
+
+Bad trade-off statement:
+
+> **B — add a job queue.** More scalable and future-proof, slightly more complex.
+
+The second one skips for whom, why, what it costs, and what evidence backs it.
+
+**Self-check:**
+
+Run these against the design before you write the spec, and again against the written spec. If an answer is uncomfortable, the design is telling you something — fix it rather than explaining it away.
+
+- **Can you explain it?** Could you explain how this works to a new colleague in three sentences?
+- **Will they guess right?** The first time a user touches it, does their intuition match the actual behavior?
+- **Is failure visible?** When something goes wrong, can you quickly tell which piece broke and how far the damage reaches?
+- **Complex for whom?** Every extra abstraction or process step — does it serve a need that has already occurred, or one you are imagining?
+- **Where did the complexity go?** Did this simplification actually remove complexity, or just push it onto users or operations?
 
 **Design for isolation and clarity:**
 
@@ -240,6 +275,8 @@ is the whole process.
 
 - Write the validated design (spec) to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`
   - (User preferences for spec location override this default)
+- Cover: architecture, components, data flow, error handling, testing. Scale each section to its complexity: a few sentences if straightforward, up to 200-300 words if nuanced. **The spec is written to be implemented from** — it carries the detail an implementer needs, not the framing a reviewer needs; that framing goes in the presentation and stays out of the spec
+- Include a **Complexity Decisions** section: one line per piece of complexity accepted over the baseline — what was added, for whom, the justifying reason and its evidence, what it costs, what it buys. Also record what you deliberately left out and what evidence would change that answer. Without this, the reasoning is gone by the time anyone implements it
 - Use elements-of-style:writing-clearly-and-concisely skill if available
 - Commit the design document to git
 
@@ -250,15 +287,32 @@ After writing the spec document, look at it with fresh eyes:
 2. **Internal consistency:** Do any sections contradict each other? Does the architecture match the feature descriptions?
 3. **Scope check:** Is this focused enough for a single implementation plan, or does it need decomposition?
 4. **Ambiguity check:** Could any requirement be interpreted two different ways? If so, pick one and make it explicit.
+5. **Self-check:** Re-run all five self-check questions against the written spec — explainable in three sentences, behavior matches intuition, failures are locatable, every abstraction serves a need that already occurred, and complexity was removed rather than pushed onto users or ops.
+6. **Complexity ledger check:** Does every piece of complexity in the spec appear in the Complexity Decisions section with a justifying reason and its evidence? Anything that doesn't is either unjustified — cut it — or under-documented — write the line.
 
 Fix any issues inline. No need to re-review — just fix and move on.
 
-**User Review Gate:**
-After the spec review loop passes, ask the user to review the written spec before proceeding:
+**Presenting the design:**
 
-> "Spec written and committed to `<path>`. Please review it and let me know if you want to make any changes before we start writing out the implementation plan."
+Only now, with the spec written and self-reviewed, do you present the design.
 
-Wait for the user's response. If they request changes, make them and re-run the spec review loop. Only proceed once the user approves.
+Read [design-presentation.md](design-presentation.md) and follow it. In short: **restate the written spec in pure product language** — what people do and what the system records, with no file, class, table, or framework names — covering four parts:
+
+1. **Approach summary** — the core idea in a few sentences, the key changes plus the whole surrounding flow threaded by one concrete example (at each step: what the person does, what the system records), and the key branch flows
+2. **Design rationale** — the new concepts and what each maps to in the real world, the single most central decision and what you rejected, the relationship to concepts already in the system, the assumptions and constraints, and the scenarios this cannot cover
+3. **Implementation approach** — the five most important rules, which existing modules and flows are touched, and whether the new logic lands in one place or many
+4. **Change inventory** — pages, interaction steps, fields and entity changes, plus one concrete example of the effect after the change
+
+**None of this gets written into the spec.** It is what a reviewer needs in order to judge the approach; the spec is what an implementer needs in order to build it. Never let the presentation say something the spec does not.
+
+**User Approval Gate:**
+After presenting, point the user at the spec path and ask for approval. If the design touches pages or interactions, offer the quick prototype in the same message:
+
+> "Spec written and committed to `<path>`, and the approach is laid out above. Want me to spin up a quick prototype so you can see the pages before approving? Either way, let me know if you want to change anything before we start writing out the implementation plan."
+
+If they want the prototype, dispatch **one subagent** on a fast execution-oriented model using the prompt in [design-presentation.md](design-presentation.md). The subagent starts cold, so the prompt must carry the spec path and the design rationale from the presentation. Don't build the prototype yourself in this session — it is throwaway visualization, not implementation.
+
+Wait for the user's response. If they request changes, **make the changes in the spec** — not in the prototype — re-run the spec review loop, and present again. Only proceed once the user approves.
 
 **Implementation:**
 

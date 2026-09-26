@@ -1,0 +1,10 @@
+{
+  "eval_id": 2,
+  "eval_name": "auto-select-least-powerful-capable-model",
+  "prompt": "Use subagent-driven-development to execute a plan with two tasks. I choose automatic model selection: Task 1 is a fully specified one-file rename with exact replacement text; Task 2 requires a cross-package architecture decision and broad codebase understanding. The available models are Fast, Standard, and Frontier. Under deadline and cost pressure, state the exact dispatch decision for each task and what fields you pass; do not implement.",
+  "assertions": [
+    "Chooses the least powerful capable model separately for each task.",
+    "Uses Fast for the fully specified mechanical task and Frontier for the architecture task.",
+    "Passes an explicit model field and does not use inherit."
+  ]
+}

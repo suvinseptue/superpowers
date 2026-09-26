@@ -1,0 +1,10 @@
+{
+  "eval_id": 3,
+  "eval_name": "opencode-dispatch-preserves-contract",
+  "prompt": "Execute docs/superpowers/plans/cache.md with subagent-driven-development. I choose OpenCode dispatch. The task brief is /repo/.superpowers/sdd/task-1-brief.md, the report must be /repo/.superpowers/sdd/task-1-report.md, and the repo root is /repo. We are in a hurry, so show the concrete invocation you would use and the worker contract you preserve; do not actually run it.",
+  "assertions": [
+    "Uses opencode run -m opencode-go/deepseek-v4.1-flash --variant high --auto.",
+    "Runs from /repo and supplies a concrete task prompt that references the brief and report paths.",
+    "Preserves one fresh worker per task, commit, testing, self-review, status, and report requirements."
+  ]
+}

@@ -5,8 +5,10 @@ Use this template when dispatching an implementer subagent.
 ```
 Subagent (general-purpose):
   description: "Implement Task N: [task name]"
-  model: [MODEL — REQUIRED: choose per SKILL.md Model Selection; an omitted
-         model silently inherits the session's most expensive one]
+  model: cursor-grok-4.6-high-fast
+         [DEFAULT unless this conversation named a different model.
+          REQUIRED: never omit, never inherit — an omitted model silently
+          inherits the session's most expensive one. See SKILL.md Model Selection]
   prompt: |
     You are implementing Task N: [task name]
 
@@ -47,17 +49,22 @@ Subagent (general-purpose):
     While iterating, run the focused test for what you're changing; run the
     full suite once before committing, not after every edit.
 
+    If a service won't start because its port is taken, free the port
+    (`lsof -ti:<PORT> | xargs kill -9`), restart, and verify. That is
+    cleanup, not a blocker — never report BLOCKED or skip the check over
+    a busy port.
+
     ## You Do Not Dispatch Subagents
 
     Do all of this task's work yourself. Never spawn a subagent to
     implement part of the task, and above all never spawn a reviewer to
     check your work. Self-review (below) means reading your own diff.
-    Review is the controller's job: after you report, it dispatches a
-    fresh reviewer against your diff. A reviewer you spawn duplicates
-    that review at full cost, and its approval counts for nothing in
-    the process. If you catch yourself thinking "an independent review
-    would strengthen my report" — that review is already scheduled.
-    Report instead.
+    Nothing in this session reviews your diff: once every task is done,
+    the whole branch goes to an external reviewer outside the session. A
+    reviewer you spawn is an unbudgeted seat whose verdict nobody reads or
+    acts on. If you catch yourself thinking "an independent review would
+    strengthen my report" — the report IS what the external review is
+    built from. Make the report accurate instead.
 
     ## Code Organization
 
@@ -116,14 +123,16 @@ Subagent (general-purpose):
 
     If you find issues during self-review, fix them now before reporting.
 
-    ## After Review Findings
+    ## If You Are Resumed
 
-    If the task review finds issues, you will be resumed with the findings.
-    Fix them, re-run the tests that cover the amended code, and append a fix
-    report to your report file: what you changed, the covering tests you
-    ran, the command, and the output. Reviewers will not re-run tests for
-    you — your report is the test evidence. Then reply with the same short
-    status contract as your first report.
+    You may be resumed — because the controller needs a concern settled,
+    or because an external review later returned findings on your task.
+    Fix what you are given, re-run the tests that cover the amended code,
+    and append a fix report to your report file: what you changed, the
+    covering tests you ran, the command, and the output. Nobody re-runs
+    tests for you — your report is the test evidence that reaches the
+    reviewer. Then reply with the same short status contract as your first
+    report.
 
     ## Report Format
 
